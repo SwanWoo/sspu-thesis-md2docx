@@ -15,12 +15,25 @@
 
 ## 📋 环境要求
 
-| 依赖               | 说明                                                  |
-| ------------------ | ----------------------------------------------------- |
-| Python ≥ 3.10      | 运行环境                                              |
-| uv                 | Python 包管理器 (<https://docs.astral.sh/uv/>)        |
-| XeLaTeX (TeX Live) | 公式渲染（可选，缺失时公式以原始 LaTeX 文本显示）     |
-| macOS / Linux      | 开发平台                                              |
+### 必装
+
+| 依赖          | 说明                                           |
+| ------------- | ---------------------------------------------- |
+| Python ≥ 3.10 | 运行环境                                       |
+| uv            | Python 包管理器 (<https://docs.astral.sh/uv/>) |
+| macOS / Linux | 开发平台                                       |
+
+### 可选（按需安装）
+
+| 依赖                    | 用途                              | 缺失时行为                       | 安装命令                                                          |
+| ----------------------- | --------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
+| XeLaTeX (TeX Live)      | LaTeX 公式渲染为高清 PNG          | 公式以原始 LaTeX 文本显示        | `brew install --cask mactex` / `apt install texlive-xetex`       |
+| mermaid-cli (`mmdc`)    | Mermaid 时序图导出 PNG            | AI 自动降级为 matplotlib 手绘    | `npm install -g @mermaid-js/mermaid-cli`                          |
+| Chrome Headless Shell   | mmdc 渲染后端                     | mmdc 报 `Could not find Chrome` | `npx puppeteer browsers install chrome-headless-shell`            |
+| graphviz (`dot`)        | ER图/状态机/流程图                | AI 改用 matplotlib 绘制          | `brew install graphviz` / `apt install graphviz`                  |
+| matplotlib              | AI 生成数据图/架构图/时序图       | 无法生成图表                     | `pip install matplotlib`（已含在 pyproject.toml）                 |
+| pandoc                  | .docx 文件内容提取                | 回退到 unzip + sed 提取          | `brew install pandoc` / `apt install pandoc`                      |
+| poppler (`pdftotext`)   | .pdf 文件内容提取                 | 无法提取 PDF 文本                | `brew install poppler` / `apt install poppler-utils`              |
 
 ## 🚀 快速开始
 
@@ -52,6 +65,26 @@ xelatex --version
 ```
 
 ### 2. 准备论文
+
+#### 🎯 用 AI 助手写论文（推荐）
+
+不想手写 Markdown？在本项目目录下打开 [Claude Code](https://claude.ai/code) 或 [Codex](https://openai.com/codex)，直接说一句话即可：
+
+| 你想做的   | 对 AI 说                                |
+| ---------- | --------------------------------------- |
+| 从零起草   | "帮我写一篇关于 X 的毕业论文"           |
+| 整理草稿   | （粘贴文字）"帮我整理成论文格式"        |
+| 转换文件   | "把 ~/Downloads/draft.docx 转成论文 md" |
+| 修改已有   | "把 input/thesis.md 第三章表格改规范"   |
+
+AI 会自动调用 `thesis-to-markdown` skill，引导你补齐封面信息、按解析器规范生成 `input/<slug>.md`，并可一键衔接去 AI 味润色。生成后运行 `uv run python thesis2docx.py` 即可拿到 Word。
+
+**图片处理**：把图片文件放入 `images/` 目录，以图注命名（如 `图3-1-系统架构图.png`）。AI 也能帮你画图——检测到数据时主动询问是否生成图表，描述架构需求时自动绘制黑白风格示意图。手机截图可通过 AirDrop / 微信文件助手传到电脑后放入 `images/`。
+
+> 💡 Claude Code 用户：skill 位于 `.claude/skills/thesis-to-markdown.md`
+> 💡 Codex 用户：指令位于 `AGENTS.md`
+
+#### 手动撰写
 
 在 `input/thesis.md` 中用 Markdown 撰写论文，图片放在 `images/` 目录下。
 

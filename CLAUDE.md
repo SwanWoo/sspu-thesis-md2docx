@@ -4,9 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SSPU graduation thesis tool. Converts `final_paper.md` (a Markdown thesis draft) into a formatted `.docx` Word document by injecting content into a university-provided Word template at the XML level.
+SSPU graduation thesis tool. Converts Markdown thesis drafts from `input/*.md` into formatted `.docx` Word documents by injecting content into a university-provided Word template at the XML level.
 
-All active work is in `thesis2docx.py`.
+Active code: `thesis2docx.py`. Input-side AI workflow: `.claude/skills/thesis-to-markdown.md` (Claude Code) / `AGENTS.md` (Codex).
+
+## Input-side Workflow (IMPORTANT)
+
+When the user wants to **create, convert, or restructure thesis content** (e.g. "写论文", "转 markdown", "帮我整理", "从 docx 转", "起草毕业论文", pastes raw text, or provides a .docx/.pdf/.txt path), **invoke the `thesis-to-markdown` skill FIRST** before doing anything else. That skill handles intent detection, cover-field collection, syntax normalization, and optional humanizer chaining. Do NOT hand-write Markdown without it — the parser is custom and unforgiving.
+
+Codex agents: see `AGENTS.md` at repo root for the equivalent instructions.
 
 ## Commands
 
@@ -91,6 +97,7 @@ These indices are **fragile** — template changes require re-indexing.
 - **`rels_counter` dict** — `{'count': 0, '_rels_entries': []}` passed mutably to track image/formula relationships; consumed by `_update_rels_file()`
 - **Formula rendering** — XeLaTeX compiles LaTeX to PDF, PyMuPDF converts to PNG at 1200 DPI. Numbered formulas use center-tab + right-tab layout for `(2-1)` style numbering. Un-numbered formulas use `jc=center`.
 - **Media files accumulate** — `template/word/media/` grows with each run (formula PNGs + downloaded images). Gitignored via `.gitignore`.
+- **Image path resolution** — `build_image_block()` resolves paths in priority order: media cache → local file (relative to project root or `file://` URI) → HTTP(S) URL direct → proxy retry. Relative paths like `images/foo.png` are resolved against `os.path.dirname(os.path.abspath(__file__))`.
 - **Bookmark counter** — global `_bookmark_counter`, scans template for max existing `_Toc` bookmark ID
 - **Cover P5 (英文题目) and P10 (学部院)** — font sizes preserved from template (sz=28 for English title value, sz=28 for college value)
 - **Cover font format** — 2026届新模板封面所有字段统一使用 theme font (asciiTheme/hAnsiTheme/cstheme = minorHAnsi)，不再使用 hAnsi='黑体'
@@ -104,7 +111,11 @@ These indices are **fragile** — template changes require re-indexing.
 ## Important Files
 
 - `thesis2docx.py` — the converter (all active code)
-- `final_paper.md` — thesis source Markdown
+- `input/*.md` — thesis source Markdown files (default: first `.md` alphabetically, or pass path as arg)
+- `images/` — local image assets, named `图x-x-描述.png` by convention
+- `.claude/skills/thesis-to-markdown.md` — input-side AI skill (Claude Code)
+- `AGENTS.md` — input-side AI instructions (Codex, sync pair with above skill)
+- `.claude/skills/humanizer-academic-zh.md` — de-AI-tone polishing skill
 - `template/word/document.xml` — template body XML (read-only reference)
 - `template/word/styles.xml` — template style definitions
 - `pyproject.toml` — uv project config (dependency: `pymupdf>=1.24`)

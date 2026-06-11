@@ -17,8 +17,9 @@ template/word/media/test_*
 # MCP config (contains API keys)
 .mcp.json
 
-# Session / tool artifacts
+# Session / tool artifacts (keep .claude/skills/ — those are project source)
 .remember/
 .agents/
-.claude/
+.claude/settings.json
+.claude/settings.local.json
 skills-lock.json

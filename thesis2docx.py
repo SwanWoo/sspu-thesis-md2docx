@@ -1554,7 +1554,7 @@ def build_image_block(block, media_files_dict=None, rels_counter=None):
         return [build_image_placeholder(block)]
 
     try:
-        # 下载图片（优先使用本地缓存，缺失时直连，失败后挂代理重试）
+        # 下载图片（优先本地文件 → 缓存 → URL直连 → 代理重试）
         img_filename_prefix = f'image_{hash(url) & 0xFFFFFFFF:08x}'
         media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'template', 'word', 'media')
         cached = [f for f in os.listdir(media_dir) if f.startswith(img_filename_prefix + '.')] if os.path.isdir(media_dir) else []
@@ -1564,30 +1564,43 @@ def build_image_block(block, media_files_dict=None, rels_counter=None):
                 img_bytes = _f.read()
             content_type = 'image/png' if cached[0].endswith('.png') else 'image/jpeg'
         else:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            response = None
-            # 先直连尝试
-            try:
-                _opener = urllib.request.build_opener()
-                response = _opener.open(req, timeout=15)
-            except Exception:
-                pass
-            # 直连失败，挂代理重试
-            if response is None:
-                proxy_url = os.environ.get('https_proxy') or os.environ.get('HTTPS_PROXY')
-                if proxy_url:
-                    _proxy_handler = urllib.request.ProxyHandler({'https': proxy_url, 'http': proxy_url})
-                    _ssl_ctx = ssl.create_default_context()
-                    _https_handler = urllib.request.HTTPSHandler(context=_ssl_ctx)
-                    _opener = urllib.request.build_opener(_proxy_handler, _https_handler)
-                else:
-                    _ssl_ctx = ssl.create_default_context()
-                    _opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=_ssl_ctx))
+            # 本地文件回退：支持相对路径（相对项目根）和 file:// URI
+            local_path = None
+            if url.startswith('file://'):
+                local_path = url[7:]
+            elif not url.startswith(('http://', 'https://')):
+                project_root = os.path.dirname(os.path.abspath(__file__))
+                local_path = os.path.normpath(os.path.join(project_root, url))
+            if local_path and os.path.isfile(local_path):
+                with open(local_path, 'rb') as _f:
+                    img_bytes = _f.read()
+                ext = os.path.splitext(local_path)[1].lower().lstrip('.')
+                content_type = {'png': 'image/png', 'gif': 'image/gif', 'bmp': 'image/bmp'}.get(ext, 'image/jpeg')
+            else:
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                response = _opener.open(req, timeout=30)
-                print(f'  图片通过代理下载: {url[:60]}...', file=sys.stderr)
-            img_bytes = response.read()
-            content_type = response.headers.get('Content-Type', '')
+                response = None
+                # 先直连尝试
+                try:
+                    _opener = urllib.request.build_opener()
+                    response = _opener.open(req, timeout=15)
+                except Exception:
+                    pass
+                # 直连失败，挂代理重试
+                if response is None:
+                    proxy_url = os.environ.get('https_proxy') or os.environ.get('HTTPS_PROXY')
+                    if proxy_url:
+                        _proxy_handler = urllib.request.ProxyHandler({'https': proxy_url, 'http': proxy_url})
+                        _ssl_ctx = ssl.create_default_context()
+                        _https_handler = urllib.request.HTTPSHandler(context=_ssl_ctx)
+                        _opener = urllib.request.build_opener(_proxy_handler, _https_handler)
+                    else:
+                        _ssl_ctx = ssl.create_default_context()
+                        _opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=_ssl_ctx))
+                    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                    response = _opener.open(req, timeout=30)
+                    print(f'  图片通过代理下载: {url[:60]}...', file=sys.stderr)
+                img_bytes = response.read()
+                content_type = response.headers.get('Content-Type', '')
 
         # 确定文件扩展名
         if 'png' in content_type:
