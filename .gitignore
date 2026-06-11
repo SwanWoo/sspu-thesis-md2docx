@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Generated output
+output/
+
+# Template generated media (formula PNGs, downloaded images)
+template/word/media/formula_*
+template/word/media/image_*
+template/word/media/test_*
+
+# OS
+.DS_Store
+
+# MCP config (contains API keys)
+.mcp.json
+
+# Session / tool artifacts
+.remember/
+.agents/
+.claude/
+skills-lock.json
